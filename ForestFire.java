@@ -1,6 +1,32 @@
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Scanner;
+
 public class ForestFire {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, FileNotFoundException{
+
+
+        File f = new File("forests.csv");
+        Scanner scanner = new Scanner(f);
+        scanner.nextLine();
+        ArrayList<Forest> forests = new ArrayList<Forest>();
+
+        while(scanner.hasNextLine()){
+            String s = scanner.nextLine();
+            String[] line = s.split(",");
+            Forest x = new Forest(line[0],line[1],line[2],Double.parseDouble(line[3]),Integer.parseInt(line[4]),Integer.parseInt(line[5]),Integer.parseInt(line[6]),Integer.parseInt(line[7]));
+            forests.add(x);
+        
+        }
+
+        forests.get(1).initializeForest();
+        
+
         // Step 1: Read in the data file (forests.csv) and create Forest objects.
+
         //   - Open the CSV file.
         //   - Skip/read the header row.
         //   - Parse each line into fields and construct a Forest.
