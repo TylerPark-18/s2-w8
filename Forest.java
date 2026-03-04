@@ -12,9 +12,9 @@ public class Forest {
     private double burnRate;
     private int initialTreeCount;
     private int burnDuration;
-    private int gridRows;
-    private int gridCols;
-    private Tree[][] grid;
+    public int gridRows;
+    public int gridCols;
+    public Tree[][] grid;
 
     public Forest(String name, String type, String vegetation, double burnRate, int burnDuration, int initialTreeCount, int gridRows, int gridCols) {
         this.gridRows = gridRows;
@@ -30,27 +30,27 @@ public class Forest {
     }
     
     public void initializeForest(){
-        // Step 1: Determine how many cells in the grid should start as TREE
-        //         based on initialTreeCount and the grid dimensions.
-        // Step 2: Fill the grid with EMPTY trees first so every cell has a Tree object.
-        // Step 3: Randomly place TREE states until the target initial tree count is reached.
-        // Step 4: Reset any burn-time/state tracking needed for a fresh simulation start.
-
+        int maxTrees = gridRows * gridCols;
+        int treesToPlace = Math.min(initialTreeCount, maxTrees);
         int numTrees = 0;
         for(int i = 0; i< grid.length;i++){
             for(int k = 0; k< grid[0].length;k++){
                 grid[i][k] = new Tree(0);
-                
             }
         }
-
-        while(numTrees < initialTreeCount){
+        int attempts = 0;
+        int maxAttempts = treesToPlace * 10;
+        while(numTrees < treesToPlace && attempts < maxAttempts){
             int row = (int)(Math.random()*grid.length);
             int column = (int)(Math.random()*grid[0].length);
             if(grid[row][column].getState() == 0){
                 grid[row][column].setState(1);
                 numTrees++;
-            }  
+            }
+            attempts++;
+        }
+        if (numTrees < treesToPlace) {
+            System.out.println("Warning: Could not place all trees. Placed " + numTrees + " out of " + treesToPlace);
         }
         for(int i = 0; i< grid.length; i++){
             for(int k = 0; k< grid[0].length;k++){
@@ -64,14 +64,10 @@ public class Forest {
     }
 
     public Tree[][] deepCopy(){
-        // Step 1: Create a new Tree[][] with the same dimensions as grid.
-        // Step 2: Loop through every cell in grid.
-        // Step 3: Copy each Tree by value (state and burnTime), not by reference.
-        // Step 4: Return the copied Tree[][].
         Tree[][] newTree = new Tree[gridRows][gridCols];
         for(int i = 0; i< gridRows;i++){
             for(int k = 0; k< gridCols;k++){
-                newTree[i][k].setState(grid[i][k].getState());
+                newTree[i][k] = new Tree(grid[i][k].getState());
                 newTree[i][k].setBurnTime(grid[i][k].getBurnTime());
             }
         }
@@ -80,57 +76,53 @@ public class Forest {
 
     public void spreadFire() {
         Tree[][] tree = deepCopy();
-        for(int row = 0;row<grid.length;row++){
-            for(int col = 0; col< grid.length;col++){
-                if(tree[row][col].getState()!= 0){
-                    if(tree[row][col].getState()== 2) {
-                        if(tree[row][col]!= tree[0][0] || tree[row][col]!= tree[gridRows][gridCols] ||tree[row][col] != tree[0][gridCols] || tree[row][col]!= tree[gridRows][0]){
-                            if(tree[row][col-1].getState()==1){
-                                if(Math.random()<=burnRate){
-                                    tree[row][col-1].setState(2);
-                                    tree[row][col-1].setBurnTime(burnDuration);
-                                }
-                            }
-                            if(tree[row][col+1].getState()==1){
-                                if(Math.random()<=burnRate){
-                                    tree[row][col+1].setState(2);
-                                    tree[row][col+1].setBurnTime(burnDuration);
-                                }
-                            }
-                            if(tree[row-1][col].getState()==1){
-                                if(Math.random()<=burnRate){
-                                    tree[row+1][col].setState(2);
-                                    tree[row][col].setBurnTime(burnDuration);
-                                }
-                            }
-                            if(tree[row+1][col].getState()==1){
-                                if(Math.random()<=burnRate){
-                                    tree[row+1][col].setState(2);
-                                    tree[row+1][col].setBurnTime(burnDuration);
-                                }
-                            }
-                         }
-                    tree[row][col].setBurnTime(tree[row][col].getBurnTime()+1);
-                }
-            }
-            }
-        }
-
-        for(int row = 0; row < gridRows;row++){
-            for(int col = 0; col <gridCols;col++){
-                if(tree[row][col].getBurnTime()== burnDuration){
-                    tree[row][col].setState(0);
+        for(int row = 0; row < gridRows; row++){
+            for(int col = 0; col < gridCols; col++){
+                if(tree[row][col].getState() == Tree.BURNING) {
+                    // Left neighbor
+                    if(col > 0 && tree[row][col-1].getState() == Tree.TREE) {
+                        if(Math.random() <= burnRate) {
+                            tree[row][col-1].setState(Tree.BURNING);
+                            tree[row][col-1].setBurnTime(0);
+                        }
+                    }
+                    // Right neighbor
+                    if(col < gridCols-1 && tree[row][col+1].getState() == Tree.TREE) {
+                        if(Math.random() <= burnRate) {
+                            tree[row][col+1].setState(Tree.BURNING);
+                            tree[row][col+1].setBurnTime(0);
+                        }
+                    }
+                    // Up neighbor
+                    if(row > 0 && tree[row-1][col].getState() == Tree.TREE) {
+                        if(Math.random() <= burnRate) {
+                            tree[row-1][col].setState(Tree.BURNING);
+                            tree[row-1][col].setBurnTime(0);
+                        }
+                    }
+                    // Down neighbor
+                    if(row < gridRows-1 && tree[row+1][col].getState() == Tree.TREE) {
+                        if(Math.random() <= burnRate) {
+                            tree[row+1][col].setState(Tree.BURNING);
+                            tree[row+1][col].setBurnTime(0);
+                        }
+                    }
+                    // Increase burn time
+                    tree[row][col].setBurnTime(tree[row][col].getBurnTime() + 1);
                 }
             }
         }
-        // Step 1: Call deepCopy() to create a separate "next step" grid so updates happen simultaneously.
-        // Step 2: For each BURNING tree, check valid neighbors (up/down/left/right).
-        // Step 3: For each neighboring TREE, ignite it with probability burnRate.
-        // Step 4: Increase burn time of currently burning trees.
-        // Step 5: Turn trees to EMPTY once burn time reaches burnDuration.
-        // Step 6: Replace the current grid with the updated next-step grid.
-        for(int row = 0; row < gridRows;row++){
-            for(int col = 0; col <gridCols;col++){
+        // Turn burned out trees to EMPTY
+        for(int row = 0; row < gridRows; row++){
+            for(int col = 0; col < gridCols; col++){
+                if(tree[row][col].getState() == Tree.BURNING && tree[row][col].getBurnTime() >= burnDuration){
+                    tree[row][col].setState(Tree.EMPTY);
+                }
+            }
+        }
+        // Update grid
+        for(int row = 0; row < gridRows; row++){
+            for(int col = 0; col < gridCols; col++){
                 grid[row][col] = tree[row][col];
             }
         }
