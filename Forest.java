@@ -143,7 +143,7 @@ public class Forest {
         // Step 1: Count how many trees have burned out (commonly represented as EMPTY after burning).
         // Step 2: Compute and return (burnedCount * 100.0) / initialTreeCount as a percentage.
         // Step 3: Guard against divide-by-zero if the initialTreeCount is 0.
-        return (x*100.0)/initialTreeCount;
+        return ((x*100.0)/initialTreeCount)*100;
     }
 
     public void saveGridSnapshotToFile() {
